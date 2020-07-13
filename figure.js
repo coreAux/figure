@@ -14,6 +14,16 @@
 //   })
 // })
 
+const loadingTag = document.querySelector("header p.loading");
+const nextTag = document.querySelector("a.next");
+const prevTag = document.querySelector("a.previous");
+const stepsTag = document.querySelector("footer span");
+const sliderTag = document.querySelector("div.slider");
+const footerTag = document.querySelector("footer");
+
+let currentSlide = 0;
+let totalSlides = 0;
+
 const project = "toW6EBiab28tMI5cTSF25S";
 
 const apiKey = "53572-c57e45c3-6786-48f9-916c-d21cd60e4e82";
@@ -28,34 +38,86 @@ const loadFile = (key) => {
     .then((response) => response.json())
     .then((data) => {
       // We want to return a list of frame ids
-      return data.document.children[0].children.map((frame) => {
+      const ids = data.document.children[0].children.map((frame) => {
         return frame.id;
+      });
+
+      return {
+        key: key,
+        ids: ids,
+        title: data.name,
+      };
+    });
+};
+
+const loadImages = (obj) => {
+  const key = obj.key;
+  const ids = obj.ids.join(",");
+
+  return fetch(
+    "https://api.figma.com/v1/images/" + key + "?ids=" + ids + "&scale=1",
+    apiHeaders
+  )
+    .then((response) => response.json())
+    .then((data) => {
+      return obj.ids.map((id) => {
+        return data.images[id];
       });
     });
 };
 
-const loadImages = (ids) => {
-  console.log(ids);
-  return new Promise(function (resolve, reject) {
-    resolve(ids);
-  });
-};
-
 const addImagesToSite = (urls) => {
-  const sectionTag = document.querySelector("section");
-  sectionTag.innerHTML = "";
+  sliderTag.innerHTML = "";
+  totalSlides = urls.length;
+
+  footerTag.classList.add("show");
 
   urls.forEach((url) => {
-    sectionTag.innerHTML =
-      sectionTag.innerHTML +
+    sliderTag.innerHTML =
+      sliderTag.innerHTML +
       `
       <div>
-        ${url}
+        <img src="${url}" />
       </div>
     `;
   });
 };
 
 loadFile(project)
-  .then((ids) => loadImages(ids))
+  .then((file) => {
+    loadingTag.innerHTML = file.title;
+    document.title = file.title + " - Figure";
+    return file;
+  })
+  .then((file) => loadImages(file))
   .then((imageUrls) => addImagesToSite(imageUrls));
+
+// Add in events for next and previous
+const next = function () {
+  currentSlide = currentSlide + 1;
+  if (currentSlide >= totalSlides) {
+    currentSlide = 0;
+  }
+  moveSlider();
+};
+
+const previous = function () {
+  currentSlide = currentSlide - 1;
+  if (currentSlide < 0) {
+    currentSlide = totalSlides - 1;
+  }
+  moveSlider();
+};
+
+const moveSlider = function () {
+  sliderTag.style.transform = `translate(${currentSlide * -100}vw, 0)`;
+  stepsTag.innerHTML = `${currentSlide + 1} / ${totalSlides}`;
+};
+
+nextTag.addEventListener("click", function () {
+  next();
+});
+
+prevTag.addEventListener("click", function () {
+  previous();
+});
