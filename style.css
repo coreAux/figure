@@ -1,0 +1,7 @@
+@import "reset.css";
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  line-height: 1.25;
+}
